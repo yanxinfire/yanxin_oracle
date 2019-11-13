@@ -1,0 +1,53 @@
+节点一：
+
+先看看有几个实例
+ps-ef|grep smon
+
+
+su - grid
+
+lsnrctl stauts
+记录服务名
+监听端口
+
+su - oracle
+
+
+
+sqlplus -s / as sysdba<<EOF
+alter user sys identified by u_mM16it;
+alter user system account lock;
+select username,account_status from dba_users where username='SYSTEM';
+exit;
+EOF
+
+export IPADDR1=  && export IPADDR2=  && export LSNRPORT=  && export SRVNM=   && sqlplus sys/u_mM16it@$IPADDR1:$LSNRPORT/$SRVNM as sysdba<<EOF
+select instance_number,instance_name from v\$instance;
+exit;
+EOF
+
+PWFILE=`sqlplus -s "/ as sysdba" <<EOF
+ set pagesize 0 feedback off verify off heading off echo off long 9999 linesize 130
+ SELECT 'orapw'||instance_name FROM gv\\\$instance where instance_number=1;
+exit;
+EOF`  && scp -P 12321 $ORACLE_HOME/dbs/$PWFILE $IPADDR2:$ORACLE_HOME/dbs/  &&unset PWFILE
+
+
+节点二：
+su - oracle
+
+PWFILE1=`sqlplus -s "/ as sysdba" <<EOF
+ set pagesize 0 feedback off verify off heading off echo off long 9999 linesize 130
+ SELECT 'orapw'||instance_name FROM gv\\\$instance where instance_number=1;
+exit;
+EOF` && PWFILE2=`sqlplus -s "/ as sysdba" <<EOF
+ set pagesize 0 feedback off verify off heading off echo off long 9999 linesize 130
+ SELECT 'orapw'||instance_name FROM gv\\\$instance where instance_number=2;
+exit;
+EOF` && mv $ORACLE_HOME/dbs/$PWFILE2 /tmp/$PWFILE2.bak && mv $ORACLE_HOME/dbs/$PWFILE1 $ORACLE_HOME/dbs/$PWFILE2 && unset PWFILE1 && unset PWFILE2
+
+节点一：
+sqlplus sys/u_mM16it@$IPADDR2:$LSNRPORT/$SRVNM as sysdba<<EOF
+select instance_number,instance_name from v\$instance;
+exit;
+EOF

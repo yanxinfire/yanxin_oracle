@@ -1,0 +1,24 @@
+select /*+rule*/ OWNER,
+       SEGMENT_NAME,
+       PARTITION_NAME,
+       SEGMENT_TYPE,
+       TABLESPACE_NAME,
+       EXTENT_ID,
+       FILE_ID,
+       BLOCK_ID,
+       BLOCKS,
+       nvl(BLOCK_1, 4194304 - block_id-blocks) * 8 / 1024 / 1024 diff
+  from (select b.*,
+               lead(block_id) over(partition by file_id order by block_id) - block_id block_1
+          from dba_extents b
+         where file_id = 1) a
+ where a.block_1 <> a.blocks
+    or a.block_1 is null;
+	
+	
+	
+SQL> select 4*1024*1024 from dual;
+
+         4*1024*1024
+--------------------
+             4194304

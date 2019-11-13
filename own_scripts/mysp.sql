@@ -1,0 +1,1 @@
+select sid,spid from v$session s,v$process p where s.paddr=p.addr and sid=(select sid from v$mystat where rownum=1);
